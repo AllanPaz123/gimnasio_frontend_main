@@ -44,6 +44,15 @@ const Navbar = () => {
 
   const menuItems = [
     {
+      title: 'Gestión de Usuarios',
+      icon: <PeopleIcon fontSize="small" />,
+      items: [
+        { label: 'Usuarios', path: '/usuario' },
+        { label: 'Clientes', path: '/cliente' },
+        { label: 'Roles', path: '/rol' }
+      ]
+    },
+    {
       title: 'Inventario y Equipos',
       icon: <InventoryIcon fontSize="small" />,
       items: [

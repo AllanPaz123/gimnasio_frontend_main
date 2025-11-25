@@ -23,7 +23,9 @@ import {
   MenuItem,
   Container,
   Stack,
-  Avatar
+  Avatar,
+  TablePagination,
+  InputAdornment
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -32,7 +34,8 @@ import {
   Close as CloseIcon,
   CardMembership as MembershipIcon,
   Person as PersonIcon,
-  AttachMoney as MoneyIcon
+  AttachMoney as MoneyIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
 
 const Membresia = () => {
@@ -53,6 +56,11 @@ const Membresia = () => {
   });
   const [error, setError] = useState('');
 
+  // Estados para paginación y búsqueda
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [busqueda, setBusqueda] = useState('');
+
   useEffect(() => {
     cargarMembresias();
     cargarClientes();
@@ -63,6 +71,7 @@ const Membresia = () => {
     try {
       const response = await api.get('/api/pagos/membresias/listar');
       setMembresias(response.data);
+      console.log('Membresías cargadas:', response.data);
     } catch (error) {
       console.error('Error al cargar membresías:', error);
       setError('Error al cargar membresías');
@@ -71,8 +80,16 @@ const Membresia = () => {
 
   const cargarClientes = async () => {
     try {
-      const response = await api.get('/api/cliente/listar');
-      setClientes(response.data);
+      const response = await api.get('/api/usuario/listar');
+      // Filtrar solo usuarios que tienen información de cliente
+      const clientesData = response.data
+        .filter(user => user.Cliente)
+        .map(user => ({
+          ...user.Cliente,
+          usuario: user
+        }));
+      setClientes(clientesData);
+      console.log('Clientes cargados:', clientesData);
     } catch (error) {
       console.error('Error al cargar clientes:', error);
       setError('Error al cargar clientes');
@@ -172,6 +189,43 @@ const Membresia = () => {
     return colores[estado] || 'default';
   };
 
+  // Función para filtrar membresías según la búsqueda
+  const membresiasFiltradas = membresias.filter((membresia) => {
+    const terminoBusqueda = busqueda.toLowerCase();
+    const clienteNombre = `${membresia.cliente?.nombre || ''} ${membresia.cliente?.apellido || ''}`.toLowerCase();
+    const planNombre = membresia.plan?.nombre_plan?.toLowerCase() || '';
+    
+    return (
+      clienteNombre.includes(terminoBusqueda) ||
+      planNombre.includes(terminoBusqueda) ||
+      membresia.estado?.toLowerCase().includes(terminoBusqueda) ||
+      membresia.cliente?.id_cliente?.toString().includes(terminoBusqueda)
+    );
+  });
+
+  // Calcular las membresías a mostrar en la página actual
+  const membresiasPaginadas = membresiasFiltradas.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Manejar cambio de página
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  // Manejar cambio de filas por página
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Manejar cambio en el campo de búsqueda
+  const handleBusquedaChange = (event) => {
+    setBusqueda(event.target.value);
+    setPage(0);
+  };
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
@@ -199,6 +253,24 @@ const Membresia = () => {
         </Alert>
       )}
 
+      {/* Campo de búsqueda */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Buscar por cliente, plan, estado o ID de cliente..."
+          value={busqueda}
+          onChange={handleBusquedaChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
       <TableContainer component={Paper} elevation={3}>
         <Table>
           <TableHead sx={{ bgcolor: 'primary.main' }}>
@@ -215,7 +287,8 @@ const Membresia = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {membresias.map((membresia) => (
+            {membresiasPaginadas.length > 0 ? (
+              membresiasPaginadas.map((membresia) => (
               <TableRow 
                 key={membresia.id}
                 sx={{ '&:hover': { bgcolor: 'action.hover' } }}
@@ -251,8 +324,8 @@ const Membresia = () => {
                 </TableCell>
                 <TableCell>
                   <Chip 
-                    icon={<MoneyIcon />}
-                    label={`$${membresia.monto_pagado?.toLocaleString()}`}
+                   // icon={<MoneyIcon />}
+                    label={`L ${membresia.monto_pagado?.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     color="success"
                     variant="outlined"
                     size="small"
@@ -268,8 +341,8 @@ const Membresia = () => {
                     const montoFinal = descuento > 0 ? monto - (monto * descuento / 100) : monto;
                     return (
                       <Chip 
-                        icon={<MoneyIcon />}
-                        label={`$${montoFinal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                         // icon={<MoneyIcon />}
+                        label={`L ${montoFinal.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                         color="primary"
                         size="small"
                       />
@@ -300,9 +373,29 @@ const Membresia = () => {
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))}
+            ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    {busqueda ? 'No se encontraron membresías que coincidan con la búsqueda' : 'No hay membresías registradas'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
+        <TablePagination
+          component="div"
+          count={membresiasFiltradas.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 15, 25]}
+          labelRowsPerPage="Filas por página:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+        />
       </TableContainer>
 
       <Dialog 
@@ -415,15 +508,7 @@ const Membresia = () => {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Descuento Aplicado (%)"
-                  name="descuento_aplicado"
-                  value={formData.descuento_aplicado}
-                  onChange={handleInputChange}
-                  inputProps={{ min: 0, max: 100, step: "0.01" }}
-                />
+                <TextField fullWidth type="number" label="Descuento Aplicado (%)" name="descuento_aplicado"value={formData.descuento_aplicado} onChange={handleInputChange} inputProps={{ min: 0, max: 100, step: "0.01" }} />
               </Grid>
 
               <Grid item xs={12}>
@@ -434,7 +519,7 @@ const Membresia = () => {
                     const monto = Number(formData.monto_pagado) || 0;
                     const descuento = Number(formData.descuento_aplicado) || 0;
                     const montoFinal = descuento > 0 ? monto - (monto * descuento / 100) : monto;
-                    return `$${montoFinal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    return `L ${montoFinal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   })()}
                   InputProps={{
                     readOnly: true,
@@ -467,36 +552,16 @@ const Membresia = () => {
                 </TextField>
               </Grid>
 
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Notas Adicionales"
-                  name="notas"
-                  value={formData.notas}
-                  onChange={handleInputChange}
-                />
-              </Grid>
+              <Grid item xs={12}> <TextField fullWidth multiline rows={3} label="Notas Adicionales" name="notas" value={formData.notas} onChange={handleInputChange} /> </Grid>
             </Grid>
           </Box>
         </DialogContent>
 
         <DialogActions sx={{ p: 2 }}>
-          <Button 
-            onClick={cerrarModal}
-            variant="outlined"
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            variant="contained"
-            color="primary"
-          >
-            {membresiaSeleccionada ? 'Actualizar' : 'Guardar'}
-          </Button>
+          <Button onClick={cerrarModal} variant="outlined"> Cancelar </Button>
+          <Button onClick={handleSubmit} variant="contained" color="primary"> {membresiaSeleccionada ? 'Actualizar' : 'Guardar'} </Button>
         </DialogActions>
+
       </Dialog>
     </Container>
   );

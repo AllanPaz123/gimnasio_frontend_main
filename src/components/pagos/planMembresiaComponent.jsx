@@ -50,7 +50,6 @@ const PlanMembresia = () => {
     duracion_dias: '',
     acceso_gimnasio: true,
     acceso_entrenador: false,
-    acceso_asistente_virtual: false,
     estado: 'Activa'
   });
   const [error, setError] = useState('');
@@ -108,7 +107,6 @@ const PlanMembresia = () => {
       duracion_dias: plan.duracion_dias || '',
       acceso_gimnasio: plan.acceso_gimnasio || false,
       acceso_entrenador: plan.acceso_entrenador || false,
-      acceso_asistente_virtual: plan.acceso_asistente_virtual || false,
       estado: plan.estado || 'Activa'
     });
     setMostrarModal(true);
@@ -135,7 +133,6 @@ const PlanMembresia = () => {
       duracion_dias: '',
       acceso_gimnasio: true,
       acceso_entrenador: false,
-      acceso_asistente_virtual: false,
       estado: 'Activa'
     });
     setError('');
@@ -224,15 +221,6 @@ const PlanMembresia = () => {
                         icon={<TrainerIcon />}
                         label="Entrenador"
                         color="primary"
-                        size="small"
-                        sx={{ mb: 0.5 }}
-                      />
-                    )}
-                    {plan.acceso_asistente_virtual && (
-                      <Chip 
-                        icon={<AssistantIcon />}
-                        label="Asistente Virtual"
-                        color="secondary"
                         size="small"
                         sx={{ mb: 0.5 }}
                       />
@@ -392,23 +380,6 @@ const PlanMembresia = () => {
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <TrainerIcon sx={{ mr: 1 }} color={formData.acceso_entrenador ? 'primary' : 'disabled'} />
                             <Typography>Entrenador Personal</Typography>
-                          </Box>
-                        }
-                      />
-
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={formData.acceso_asistente_virtual}
-                            onChange={handleInputChange}
-                            name="acceso_asistente_virtual"
-                            color="secondary"
-                          />
-                        }
-                        label={
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <AssistantIcon sx={{ mr: 1 }} color={formData.acceso_asistente_virtual ? 'secondary' : 'disabled'} />
-                            <Typography>Asistente Virtual</Typography>
                           </Box>
                         }
                       />

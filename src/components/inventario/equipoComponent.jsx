@@ -25,7 +25,9 @@ import {
   Card,
   Divider,
   Container,
-  Stack
+  Stack,
+  TablePagination,
+  InputAdornment
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -33,14 +35,18 @@ import {
   Add as AddIcon,
   CloudUpload as CloudUploadIcon,
   Close as CloseIcon,
-  FitnessCenter as FitnessCenterIcon
+  FitnessCenter as FitnessCenterIcon,
+  Visibility as VisibilityIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
+import VistaEquiposComponent from './equiposComponents/vistaEquiposComponent';
 
 const Equipo = () => {
   const [equipos, setEquipos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [equipoSeleccionado, setEquipoSeleccionado] = useState(null);
+  const [mostrarDetalles, setMostrarDetalles] = useState(false);
   const [formData, setFormData] = useState({
     nombre_equipo: '',
     marca: '',
@@ -57,6 +63,11 @@ const Equipo = () => {
   const [imagenPreview, setImagenPreview] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState('');
+  
+  // Estados para paginación y búsqueda
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
     cargarEquipos();
@@ -239,6 +250,13 @@ const Equipo = () => {
     }
   };
 
+
+  const verDetallesEquipo = (equipo) => {
+    setEquipoSeleccionado(equipo);
+    setMostrarDetalles(true);
+  };
+
+
   const cerrarModal = () => {
     setMostrarModal(false);
     setEquipoSeleccionado(null);
@@ -271,6 +289,43 @@ const Equipo = () => {
     return colores[estado] || 'default';
   };
 
+  // Función para filtrar equipos según la búsqueda
+  const equiposFiltrados = equipos.filter((equipo) => {
+    const terminoBusqueda = busqueda.toLowerCase();
+    return (
+      equipo.nombre_equipo?.toLowerCase().includes(terminoBusqueda) ||
+      equipo.marca?.toLowerCase().includes(terminoBusqueda) ||
+      equipo.modelo?.toLowerCase().includes(terminoBusqueda) ||
+      equipo.numero_serie?.toLowerCase().includes(terminoBusqueda) ||
+      equipo.categoria_equipo?.nombre_categoria?.toLowerCase().includes(terminoBusqueda) ||
+      equipo.ubicacion?.toLowerCase().includes(terminoBusqueda) ||
+      equipo.estado?.toLowerCase().includes(terminoBusqueda)
+    );
+  });
+
+  // Calcular los equipos a mostrar en la página actual
+  const equiposPaginados = equiposFiltrados.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Manejar cambio de página
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  // Manejar cambio de filas por página
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Manejar cambio en el campo de búsqueda
+  const handleBusquedaChange = (event) => {
+    setBusqueda(event.target.value);
+    setPage(0); // Resetear a la primera página al buscar
+  };
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
@@ -298,6 +353,24 @@ const Equipo = () => {
         </Alert>
       )}
 
+      {/* Campo de búsqueda */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Buscar por nombre, marca, modelo, serie, categoría, ubicación o estado..."
+          value={busqueda}
+          onChange={handleBusquedaChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
       <TableContainer component={Paper} elevation={3}>
         <Table>
           <TableHead sx={{ bgcolor: 'primary.main' }}>
@@ -314,7 +387,8 @@ const Equipo = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {equipos.map((equipo) => (
+            {equiposPaginados.length > 0 ? (
+              equiposPaginados.map((equipo) => (
               <TableRow 
                 key={equipo.id}
                 sx={{ '&:hover': { bgcolor: 'action.hover' } }}
@@ -342,7 +416,7 @@ const Equipo = () => {
                 <TableCell>{equipo.numero_serie}</TableCell>
                 <TableCell>{equipo.categoria_equipo?.nombre_categoria || 'N/A'}</TableCell>
                 <TableCell>{equipo.ubicacion}</TableCell>
-                <TableCell>${equipo.costo?.toLocaleString()}</TableCell>
+                <TableCell>L {equipo.costo?.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 <TableCell>
                   <Chip 
                     label={equipo.estado}
@@ -351,6 +425,13 @@ const Equipo = () => {
                   />
                 </TableCell>
                 <TableCell align="center">
+                  <IconButton
+                  color="primary"
+                  onClick={() => verDetallesEquipo(equipo)}
+                  size="small"
+                  >
+                   <VisibilityIcon />
+                  </IconButton>
                   <IconButton 
                     color="primary"
                     onClick={() => editarEquipo(equipo)}
@@ -367,9 +448,29 @@ const Equipo = () => {
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))}
+            ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    {busqueda ? 'No se encontraron equipos que coincidan con la búsqueda' : 'No hay equipos registrados'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
+        <TablePagination
+          component="div"
+          count={equiposFiltrados.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 15, 25]}
+          labelRowsPerPage="Filas por página:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+        />
       </TableContainer>
 
       <Dialog 
@@ -621,6 +722,13 @@ const Equipo = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Modal de Vista de Detalles del Equipo */}
+      <VistaEquiposComponent 
+        open={mostrarDetalles}
+        onClose={() => setMostrarDetalles(false)}
+        equipoDetalle={equipoSeleccionado}
+      />
     </Container>
   );
 };

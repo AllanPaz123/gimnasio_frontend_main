@@ -23,7 +23,9 @@ import {
   MenuItem,
   Container,
   Stack,
-  Divider
+  Divider,
+  TablePagination,
+  InputAdornment
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -31,7 +33,8 @@ import {
   Add as AddIcon,
   Close as CloseIcon,
   Build as BuildIcon,
-  CalendarToday as CalendarIcon
+  CalendarToday as CalendarIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
 
 const Mantenimiento = () => {
@@ -52,6 +55,11 @@ const Mantenimiento = () => {
     id_equipo: ''
   });
   const [error, setError] = useState('');
+
+  // Estados para paginación y búsqueda
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
     cargarMantenimientos();
@@ -167,6 +175,42 @@ const Mantenimiento = () => {
     return tipo === 'preventivo' ? 'primary' : 'secondary';
   };
 
+  // Función para filtrar mantenimientos según la búsqueda
+  const mantenimientosFiltrados = mantenimientos.filter((mantenimiento) => {
+    const terminoBusqueda = busqueda.toLowerCase();
+    
+    return (
+      mantenimiento.equipo?.nombre_equipo?.toLowerCase().includes(terminoBusqueda) ||
+      mantenimiento.equipo?.numero_serie?.toLowerCase().includes(terminoBusqueda) ||
+      mantenimiento.tipo_mantenimiento?.toLowerCase().includes(terminoBusqueda) ||
+      mantenimiento.tecnico_responsable?.toLowerCase().includes(terminoBusqueda) ||
+      mantenimiento.estado?.toLowerCase().includes(terminoBusqueda)
+    );
+  });
+
+  // Calcular los mantenimientos a mostrar en la página actual
+  const mantenimientosPaginados = mantenimientosFiltrados.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Manejar cambio de página
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  // Manejar cambio de filas por página
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Manejar cambio en el campo de búsqueda
+  const handleBusquedaChange = (event) => {
+    setBusqueda(event.target.value);
+    setPage(0);
+  };
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
@@ -194,6 +238,24 @@ const Mantenimiento = () => {
         </Alert>
       )}
 
+      {/* Campo de búsqueda */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Buscar por equipo, número de serie, tipo, técnico o estado..."
+          value={busqueda}
+          onChange={handleBusquedaChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
       <TableContainer component={Paper} elevation={3}>
         <Table>
           <TableHead sx={{ bgcolor: 'primary.main' }}>
@@ -209,7 +271,8 @@ const Mantenimiento = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {mantenimientos.map((mantenimiento) => (
+            {mantenimientosPaginados.length > 0 ? (
+              mantenimientosPaginados.map((mantenimiento) => (
               <TableRow 
                 key={mantenimiento.id}
                 sx={{ '&:hover': { bgcolor: 'action.hover' } }}
@@ -261,9 +324,29 @@ const Mantenimiento = () => {
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))}
+            ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    {busqueda ? 'No se encontraron mantenimientos que coincidan con la búsqueda' : 'No hay mantenimientos registrados'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
+        <TablePagination
+          component="div"
+          count={mantenimientosFiltrados.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 15, 25]}
+          labelRowsPerPage="Filas por página:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+        />
       </TableContainer>
 
       <Dialog 

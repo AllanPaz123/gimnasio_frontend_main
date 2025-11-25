@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/http';
+import VistaPagosComponent from './pagosComponents/vistaPagosComponent';
+import ModalComponent from './pagosComponents/modalComponent';
 import {
   Box,
   Button,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Table,
   TableBody,
   TableCell,
@@ -19,13 +16,12 @@ import {
   Chip,
   Alert,
   Typography,
-  Grid,
-  MenuItem,
-  Card,
-  Divider,
   Container,
   Stack,
-  Avatar
+  Avatar,
+  TablePagination,
+  TextField,
+  InputAdornment
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -35,17 +31,20 @@ import {
   Close as CloseIcon,
   Payment as PaymentIcon,
   Receipt as ReceiptIcon,
-  AttachMoney as MoneyIcon
+  AttachMoney as MoneyIcon,
+  Visibility as VisibilityIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
 
 const Pago = () => {
   const [pagos, setPagos] = useState([]);
   const [membresias, setMembresias] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarDetalles, setMostrarDetalles] = useState(false);
   const [pagoSeleccionado, setPagoSeleccionado] = useState(null);
+  const [pagoDetalle, setPagoDetalle] = useState(null);
   const [formData, setFormData] = useState({
     id_membresia: '',
-    monto: '',
     metodo_pago: 'Efectivo',
     notas: ''
   });
@@ -53,6 +52,11 @@ const Pago = () => {
   const [comprobantePreview, setComprobantePreview] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState('');
+
+  // Estados para paginación y búsqueda
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
     cargarPagos();
@@ -137,10 +141,11 @@ const Pago = () => {
       const formDataToSend = new FormData();
       
       // Agregar campos del pago (solo los que tienen valor válido)
-      Object.keys(formData).forEach(key => {
-        const value = formData[key];
+      //aqui con keys se refiere a cada campo del formulario
+      Object.keys(formData).forEach(campo => {
+        const value = formData[campo];
         if (value !== '' && value !== null && value !== undefined) {
-          formDataToSend.append(key, value);
+          formDataToSend.append(campo, value);
         }
       });
 
@@ -187,7 +192,6 @@ const Pago = () => {
     setPagoSeleccionado(pago);
     setFormData({
       id_membresia: pago.id_membresia || '',
-      monto: pago.monto || '',
       metodo_pago: pago.metodo_pago || 'Efectivo',
       notas: pago.notas || ''
     });
@@ -213,13 +217,23 @@ const Pago = () => {
       }
     }
   };
+  //ver detalles:
 
+  const verDetallePago = (pago) => {
+    setPagoDetalle(pago);
+    setMostrarDetalles(true);
+  };
+
+  const cerrarDetalles = () => {
+    setMostrarDetalles(false);
+    setPagoDetalle(null);
+  };
+  //QUI YA NO
   const cerrarModal = () => {
     setMostrarModal(false);
     setPagoSeleccionado(null);
     setFormData({
       id_membresia: '',
-      monto: '',
       metodo_pago: 'Efectivo',
       notas: ''
     });
@@ -237,6 +251,45 @@ const Pago = () => {
       'cheque': 'secondary'
     };
     return colores[metodo] || 'default';
+  };
+
+  // Función para filtrar pagos según la búsqueda
+  const pagosFiltrados = pagos.filter((pago) => {
+    const terminoBusqueda = busqueda.toLowerCase();
+    const clienteNombre = `${pago.membresia?.cliente?.nombre || ''} ${pago.membresia?.cliente?.apellido || ''}`.toLowerCase();
+    const planNombre = pago.membresia?.plan_membresia?.nombre_plan?.toLowerCase() || '';
+    
+    return (
+      pago.referencia?.toLowerCase().includes(terminoBusqueda) ||
+      clienteNombre.includes(terminoBusqueda) ||
+      planNombre.includes(terminoBusqueda) ||
+      pago.metodo_pago?.toLowerCase().includes(terminoBusqueda) ||
+      pago.procesado_por?.toLowerCase().includes(terminoBusqueda) ||
+      pago.monto?.toString().includes(terminoBusqueda)
+    );
+  });
+
+  // Calcular los pagos a mostrar en la página actual
+  const pagosPaginados = pagosFiltrados.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Manejar cambio de página
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  // Manejar cambio de filas por página
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Manejar cambio en el campo de búsqueda
+  const handleBusquedaChange = (event) => {
+    setBusqueda(event.target.value);
+    setPage(0);
   };
 
   return (
@@ -266,6 +319,24 @@ const Pago = () => {
         </Alert>
       )}
 
+      {/* Campo de búsqueda */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Buscar por referencia, cliente, plan, monto, método de pago o procesado por..."
+          value={busqueda}
+          onChange={handleBusquedaChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
       <TableContainer component={Paper} elevation={3}>
         <Table>
           <TableHead sx={{ bgcolor: 'primary.main' }}>
@@ -282,7 +353,8 @@ const Pago = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {pagos.map((pago) => (
+            {pagosPaginados.length > 0 ? (
+              pagosPaginados.map((pago) => (
               <TableRow 
                 key={pago.id}
                 sx={{ '&:hover': { bgcolor: 'action.hover' } }}
@@ -321,10 +393,10 @@ const Pago = () => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Chip 
-                    icon={<MoneyIcon />}
-                    label={`$${pago.monto?.toLocaleString()}`}
-                    color="success"
+                  <Chip
+                   // icon={<MoneyIcon />}
+                    label={`L ${pago.monto?.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    color="primary"
                     size="small"
                   />
                 </TableCell>
@@ -341,6 +413,14 @@ const Pago = () => {
                 <TableCell>{pago.procesadoPor?.username || 'Sistema'}</TableCell>
                 <TableCell align="center">
                   <IconButton 
+                    color="info"
+                    onClick={() => verDetallePago(pago)}
+                    size="small"
+                    title="Ver Detalles"
+                  >
+                    <VisibilityIcon />
+                  </IconButton>
+                  <IconButton 
                     color="primary"
                     onClick={() => editarPago(pago)}
                     size="small"
@@ -356,195 +436,56 @@ const Pago = () => {
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))}
+            ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    {busqueda ? 'No se encontraron pagos que coincidan con la búsqueda' : 'No hay pagos registrados'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
+        <TablePagination
+          component="div"
+          count={pagosFiltrados.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 15, 25]}
+          labelRowsPerPage="Filas por página:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+        />
       </TableContainer>
 
-      <Dialog 
-        open={mostrarModal} 
+      {/* COMPONENTE MODAL DE INSERTAR/EDITAR */}
+      <ModalComponent
+        open={mostrarModal}
         onClose={cerrarModal}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h5">
-              {pagoSeleccionado ? 'Editar Pago' : 'Nuevo Pago'}
-            </Typography>
-            <IconButton onClick={cerrarModal} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Stack>
-        </DialogTitle>
-        
-        <DialogContent dividers>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
-                {error}
-              </Typography>
-            </Alert>
-          )}
-          
-          <Box component="form" onSubmit={handleSubmit}>
-            <Typography variant="h6" sx={{ mb: 2, mt: 1 }}>
-              Información del Pago
-            </Typography>
-            
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  select
-                  required
-                  label="Membresía"
-                  name="id_membresia"
-                  value={formData.id_membresia}
-                  onChange={handleInputChange}
-                >
-                  <MenuItem value="">Seleccione una membresía</MenuItem>
-                  {membresias.map(membresia => (
-                    <MenuItem key={membresia.id} value={membresia.id}>
-                      {membresia.cliente?.nombre} {membresia.cliente?.apellido} - {membresia.plan?.nombre_plan}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
+        pagoSeleccionado={pagoSeleccionado}
+        formData={formData}
+        handleInputChange={handleInputChange}
+        handleSubmit={handleSubmit}
+        membresias={membresias.filter(m => m.estado === 'Activa')}
+        error={error}
+        comprobanteFile={comprobanteFile}
+        comprobantePreview={comprobantePreview}
+        dragActive={dragActive}
+        handleDrag={handleDrag}
+        handleDrop={handleDrop}
+        handleFileInputChange={handleFileInputChange}
+        eliminarComprobantePreview={eliminarComprobantePreview}
+      />
 
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  required
-                  type="number"
-                  label="Monto"
-                  name="monto"
-                  value={formData.monto}
-                  onChange={handleInputChange}
-                  inputProps={{ step: "0.01" }}
-                  InputProps={{
-                    startAdornment: <MoneyIcon sx={{ mr: 1, color: 'action.active' }} />
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  required
-                  label="Método de Pago"
-                  name="metodo_pago"
-                  value={formData.metodo_pago}
-                  onChange={handleInputChange}
-                >
-                  <MenuItem value="Efectivo">Efectivo</MenuItem>
-                  <MenuItem value="Tarjeta">Tarjeta</MenuItem>
-                  <MenuItem value="Transferencia">Transferencia</MenuItem>
-                </TextField>
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Notas Adicionales"
-                  name="notas"
-                  value={formData.notas}
-                  onChange={handleInputChange}
-                />
-              </Grid>
-            </Grid>
-
-            <Divider sx={{ my: 3 }} />
-            
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Comprobante de Pago
-            </Typography>
-            
-            <Card 
-              variant="outlined"
-              sx={{
-                p: 2,
-                mb: 3,
-                border: dragActive ? '2px dashed #1976d2' : '2px dashed #ccc',
-                bgcolor: dragActive ? 'action.hover' : 'background.paper',
-                cursor: 'pointer',
-                transition: 'all 0.3s',
-                '&:hover': {
-                  borderColor: 'primary.main',
-                  bgcolor: 'action.hover'
-                }
-              }}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => document.getElementById('fileInputPago').click()}
-            >
-              <input
-                id="fileInputPago"
-                type="file"
-                accept="image/png, image/jpg, image/jpeg"
-                onChange={handleFileInputChange}
-                style={{ display: 'none' }}
-              />
-              
-              {comprobantePreview ? (
-                <Box sx={{ textAlign: 'center' }}>
-                  <Avatar 
-                    src={comprobantePreview} 
-                    alt="Comprobante" 
-                    variant="rounded"
-                    sx={{ width: 150, height: 150, mx: 'auto', mb: 2 }}
-                  />
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<CloseIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      eliminarComprobantePreview();
-                    }}
-                  >
-                    Eliminar comprobante
-                  </Button>
-                </Box>
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 2 }}>
-                  <CloudUploadIcon sx={{ fontSize: 60, color: 'primary.main', mb: 1 }} />
-                  <Typography variant="body1" sx={{ mb: 0.5 }}>
-                    Arrastra el comprobante aquí
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                    o haz clic para seleccionar un archivo
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    PNG, JPG o JPEG
-                  </Typography>
-                </Box>
-              )}
-            </Card>
-          </Box>
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2 }}>
-          <Button 
-            onClick={cerrarModal}
-            variant="outlined"
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            variant="contained"
-            color="primary"
-          >
-            {pagoSeleccionado ? 'Actualizar' : 'Guardar'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* COMPONENTE DE VISTA DE DETALLES DEL PAGO */}
+      <VistaPagosComponent 
+        open={mostrarDetalles}
+        onClose={cerrarDetalles}
+        pagoDetalle={pagoDetalle}
+      />
     </Container>
   );
 };

@@ -8,6 +8,9 @@ import Equipo from './pages/inventario/Equipo';
 import PlanMembresia from './pages/pagos/Plan_membresia';
 import Membresia from './pages/pagos/Membresia';
 import Pago from './pages/pagos/Pago';
+import Usuario from './pages/usuarios/Usuario';
+import Cliente from './pages/usuarios/Cliente';
+import Rol from './pages/usuarios/Rol';
 
 
 function App() {
@@ -24,6 +27,9 @@ function App() {
         <Route path="/plan-membresia" element={<PlanMembresia />} />
         <Route path="/membresia" element={<Membresia />} />
         <Route path="/pago" element={<Pago />} />
+        <Route path="/usuario" element={<Usuario />} />
+        <Route path="/cliente" element={<Cliente />} />
+        <Route path="/rol" element={<Rol />} />
       </Routes>
    
   )
