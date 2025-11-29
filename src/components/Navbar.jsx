@@ -12,6 +12,8 @@ import {
   Container,
   Divider
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {
   FitnessCenter as GymIcon,
   Menu as MenuIcon,
@@ -28,9 +30,21 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const openMenu = Boolean(anchorEl);
+  const [mobileAnchor, setMobileAnchor] = useState(null);
+  const openMobile = Boolean(mobileAnchor);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
+  };
+
+  const handleMobileClick = (event) => {
+    setMobileAnchor(event.currentTarget);
+  };
+
+  const handleMobileClose = () => {
+    setMobileAnchor(null);
   };
 
   const handleMenuClose = () => {
@@ -124,61 +138,105 @@ const Navbar = () => {
 
           {/* Botones de navegación */}
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Button
-              variant="contained"
-              startIcon={<HomeIcon />}
-              onClick={() => navigate('/')}
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.2)',
-                backdropFilter: 'blur(10px)',
-                color: 'white',
-                fontWeight: 600,
-                '&:hover': {
-                  bgcolor: 'rgba(255,255,255,0.3)',
-                },
-                textTransform: 'none',
-                px: 3
-              }}
-            >
-              Inicio
-            </Button>
+            {!isMobile ? (
+              <>
+                <Button
+                  variant="contained"
+                  startIcon={<HomeIcon />}
+                  onClick={() => navigate('/')}
+                  sx={{
+                    bgcolor: 'rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(10px)',
+                    color: 'white',
+                    fontWeight: 600,
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.3)',
+                    },
+                    textTransform: 'none',
+                    px: 3
+                  }}
+                >
+                  Inicio
+                </Button>
 
-            <Button
-              variant="contained"
-              startIcon={<DashboardIcon />}
-              onClick={handleMenuClick}
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.2)',
-                backdropFilter: 'blur(10px)',
-                color: 'white',
-                fontWeight: 600,
-                '&:hover': {
-                  bgcolor: 'rgba(255,255,255,0.3)',
-                },
-                textTransform: 'none',
-                px: 3
-              }}
-            >
-              Menú de Gestión
-            </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<DashboardIcon />}
+                  onClick={handleMenuClick}
+                  sx={{
+                    bgcolor: 'rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(10px)',
+                    color: 'white',
+                    fontWeight: 600,
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.3)',
+                    },
+                    textTransform: 'none',
+                    px: 3
+                  }}
+                >
+                  Menú de Gestión
+                </Button>
 
-            <Button
-              variant="outlined"
-              startIcon={<LogoutIcon />}
-              onClick={handleLogout}
-              sx={{
-                borderColor: 'white',
-                color: 'white',
-                fontWeight: 600,
-                '&:hover': {
-                  borderColor: 'white',
-                  bgcolor: 'rgba(255,255,255,0.1)',
-                },
-                textTransform: 'none'
-              }}
-            >
-              Cerrar Sesión
-            </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<LogoutIcon />}
+                  onClick={handleLogout}
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: 'white',
+                      bgcolor: 'rgba(255,255,255,0.1)',
+                    },
+                    textTransform: 'none'
+                  }}
+                >
+                  Cerrar Sesión
+                </Button>
+              </>
+            ) : (
+              // Mobile: single menu button that includes navigation and logout
+              <>
+                <IconButton
+                  color="inherit"
+                  onClick={handleMobileClick}
+                  aria-label="menu"
+                >
+                  <MenuIcon />
+                </IconButton>
+                <Menu
+                  anchorEl={mobileAnchor}
+                  open={openMobile}
+                  onClose={handleMobileClose}
+                  PaperProps={{ sx: { mt: 1, minWidth: 200, borderRadius: 2 } }}
+                >
+                  <MenuItem onClick={() => { navigate('/'); handleMobileClose(); }}>Inicio</MenuItem>
+                  <Divider />
+                  {menuItems.map((section, idx) => (
+                    <Box key={idx} sx={{ px: 1 }}>
+                      <MenuItem disabled sx={{ opacity: 1, py: 0.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {section.icon}
+                          <Typography variant="subtitle2" fontWeight={700}>
+                            {section.title}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                      {section.items.map((item, itemIdx) => (
+                        <MenuItem key={itemIdx} onClick={() => { handleNavigate(item.path); handleMobileClose(); }} sx={{ pl: 4 }}>
+                          {item.label}
+                        </MenuItem>
+                      ))}
+                      {idx < menuItems.length - 1 && <Divider sx={{ my: 0.5 }} />}
+                    </Box>
+                  ))}
+                  <Divider />
+                  <MenuItem onClick={() => { handleLogout(); handleMobileClose(); }}>Cerrar Sesión</MenuItem>
+                </Menu>
+              </>
+            )}
           </Box>
         </Toolbar>
       </Container>

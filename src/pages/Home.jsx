@@ -48,29 +48,31 @@ export default function Home() {
     {
       id: 1,
       titulo: 'Entrenamiento Personalizado',
-      descripcion: 'Nuestros entrenadores certificados diseñan rutinas específicas para tus objetivos. Alcanza tu mejor versión con seguimiento profesional.',
-      imagen: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
+     descripcion:
+      'Nuestros entrenadores certificados diseñan rutinas específicas según tu nivel, objetivos y condición física. Incluye evaluación inicial, seguimiento semanal, corrección de técnica y ajustes progresivos para garantizar resultados reales de forma segura.',
+     imagen: '/imagenesHome/entrenamiento.jpg',
       icono: <GymIcon sx={{ fontSize: 40, color: 'primary.main' }} />
     },
     {
       id: 2,
       titulo: 'Horarios Flexibles',
       descripcion: 'Abierto de lunes a domingo con horarios amplios que se adaptan a tu estilo de vida. Entrena cuando mejor te convenga.',
-      imagen: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=300&fit=crop',
+      imagen: 'imagenesHome/horario.jpg',
       icono: <ScheduleIcon sx={{ fontSize: 40, color: 'primary.main' }} />
     },
     {
       id: 3,
       titulo: 'Instalaciones de Primera',
       descripcion: 'Equipamiento de última generación, áreas climatizadas, vestuarios modernos y zonas de entrenamiento especializadas.',
-      imagen: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=400&h=300&fit=crop',
+      imagen: 'imagenesHome/instalaciones.jpg',
       icono: <StarIcon sx={{ fontSize: 40, color: 'primary.main' }} />
     },
     {
       id: 4,
       titulo: 'Promociones Especiales',
-      descripcion: 'Descuentos por referidos, planes familiares y promociones mensuales. Consulta nuestras ofertas vigentes.',
-      imagen: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&h=300&fit=crop',
+       descripcion:
+      'Aprovecha nuestros descuentos por referidos, planes familiares, promociones mensuales y paquetes especiales para nuevos usuarios. Mantente atento a nuestras ofertas actualizadas para obtener los mejores beneficios.',
+      imagen: '/imagenesHome/promo.jpeg',
       icono: <OfferIcon sx={{ fontSize: 40, color: 'primary.main' }} />
     }
   ];
@@ -84,7 +86,7 @@ export default function Home() {
       <Box
         sx={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          minHeight: '500px',
+          minHeight: '600px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -101,7 +103,7 @@ export default function Home() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.85) 0%, rgba(118, 75, 162, 0.85) 100%)',
+            background: 'linear-gradient(135deg, rgba(28, 51, 155, 0.85) 0%, rgba(118, 75, 162, 0.85) 100%)',
           }
         }}
       >
