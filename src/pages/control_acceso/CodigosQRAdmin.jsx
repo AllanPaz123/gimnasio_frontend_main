@@ -12,9 +12,14 @@ import {
   TableRow,
   Paper,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import Navbar from "../../components/Navbar";
 import api from "../../api/http";
+import { QRCodeCanvas } from "qrcode.react";
 
 const CodigosQRAdmin = () => {
   const [codigos, setCodigos] = useState([]);
@@ -22,6 +27,8 @@ const CodigosQRAdmin = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [form, setForm] = useState({ codigo_qr: "", horas_validez: "" });
+  const [qrPreviewOpen, setQrPreviewOpen] = useState(false);
+  const [qrSeleccionado, setQrSeleccionado] = useState(null);
 
   const cargarCodigos = async () => {
     try {
@@ -164,6 +171,7 @@ const CodigosQRAdmin = () => {
                   <TableCell>Generado</TableCell>
                   <TableCell>Expira</TableCell>
                   <TableCell>Estado</TableCell>
+                  <TableCell align="center">QR</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -197,6 +205,18 @@ const CodigosQRAdmin = () => {
                           <Chip label="Inactivo" color="default" size="small" />
                         )}
                       </TableCell>
+                      <TableCell align="center">
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => {
+                            setQrSeleccionado(c);
+                            setQrPreviewOpen(true);
+                          }}
+                        >
+                          Ver QR
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -204,6 +224,44 @@ const CodigosQRAdmin = () => {
             </Table>
           )}
         </Paper>
+
+        <Dialog
+          open={qrPreviewOpen}
+          onClose={() => setQrPreviewOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Código QR</DialogTitle>
+          <DialogContent
+            sx={{ display: "flex", justifyContent: "center", py: 2 }}
+          >
+            {qrSeleccionado && (
+              <QRCodeCanvas
+                id="qr-image-canvas"
+                value={qrSeleccionado.codigo_qr}
+                size={256}
+                includeMargin
+              />
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setQrPreviewOpen(false)}>Cerrar</Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                const canvas = document.getElementById("qr-image-canvas");
+                if (!canvas) return;
+                const pngUrl = canvas.toDataURL("image/png");
+                const link = document.createElement("a");
+                link.href = pngUrl;
+                link.download = `qr-${qrSeleccionado?.codigo_qr || "codigo"}.png`;
+                link.click();
+              }}
+            >
+              Descargar
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </>
   );
