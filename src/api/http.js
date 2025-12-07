@@ -1,13 +1,13 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
 });
 
 // Interceptor para agregar el token JWT a todas las peticiones
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -24,7 +24,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token inválido o expirado
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
       // Opcionalmente redirigir al login
       // window.location.href = '/login';
     }

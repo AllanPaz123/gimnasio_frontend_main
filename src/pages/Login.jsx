@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../api/http';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../api/http";
+import { useAuth } from "../context/AuthContext.jsx";
 import {
   Container,
   Box,
@@ -9,50 +10,47 @@ import {
   Button,
   Typography,
   Alert,
-  Avatar
-} from '@mui/material';
-import { LockOutlined as LockIcon } from '@mui/icons-material';
+  Avatar,
+} from "@mui/material";
+import { LockOutlined as LockIcon } from "@mui/icons-material";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
-    username: '',
-    password: ''
+    username: "",
+    password: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      const response = await api.post('/api/autenticacion/login', formData);
-      
-      // Guardar token en localStorage
-      localStorage.setItem('token', response.data.token);
-      
-      // Redirigir al home
-      navigate('/');
-      
-      // Recargar la página para aplicar el token
-      window.location.reload();
+      const response = await api.post("/api/autenticacion/login", formData);
+
+      // Guardar token y cargar perfil
+      login(response.data.token, () => {
+        navigate("/");
+      });
     } catch (error) {
-      console.error('Error al iniciar sesión:', error);
+      console.error("Error al iniciar sesión:", error);
       if (error.response?.data?.mensaje) {
         setError(error.response.data.mensaje);
       } else if (error.response?.data?.errores) {
-        setError(error.response.data.errores.map(e => e.msg).join(', '));
+        setError(error.response.data.errores.map((e) => e.msg).join(", "));
       } else {
-        setError('Error al iniciar sesión. Verifica tus credenciales.');
+        setError("Error al iniciar sesión. Verifica tus credenciales.");
       }
     } finally {
       setLoading(false);
@@ -64,14 +62,22 @@ const Login = () => {
       <Box
         sx={{
           marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
-        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Avatar sx={{ m: 1, bgcolor: 'primary.main', width: 56, height: 56 }}>
+        <Paper elevation={3} sx={{ p: 4, width: "100%" }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Avatar
+              sx={{ m: 1, bgcolor: "primary.main", width: 56, height: 56 }}
+            >
               <LockIcon />
             </Avatar>
             <Typography component="h1" variant="h5">
@@ -117,16 +123,32 @@ const Login = () => {
               sx={{ mt: 3, mb: 2 }}
               disabled={loading}
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
             </Button>
           </Box>
 
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+          <Box sx={{ mt: 2, p: 2, bgcolor: "info.light", borderRadius: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              <strong>Credenciales por defecto:</strong><br />
-              Usuario: admin<br />
+              <strong>Credenciales por defecto:</strong>
+              <br />
+              Usuario: admin
+              <br />
               Contraseña: (la que hayas configurado)
             </Typography>
+          </Box>
+
+          <Box sx={{ mt: 2, textAlign: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              ¿Eres nuevo?
+            </Typography>
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => navigate("/registro")}
+              sx={{ mt: 0.5, textTransform: "none" }}
+            >
+              Crea una cuenta
+            </Button>
           </Box>
         </Paper>
       </Box>
